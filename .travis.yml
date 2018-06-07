@@ -1,0 +1,58 @@
+language: c
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - cmake
+            - libsdl2-dev
+            - libsdl2-mixer-dev
+            - libsdl2-ttf-dev
+      env:
+        - CC=gcc-7
+        - CXX=g++-7
+        - CHECK_VERSION=0.12.0
+        - CHECK_FILE=check-$CHECK_VERSION.tar.gz
+        - CHECK_URL=https://github.com/libcheck/check/releases/download/$CHECK_VERSION/$CHECK_FILE
+      before_install:
+        - wget $CHECK_URL
+        - tar zxf $CHECK_FILE
+        - cd check-$CHECK_VERSION
+        - ./configure
+        - make
+        - sudo make install
+        - cd $TRAVIS_BUILD_DIR
+    - os: osx
+      osx_image: xcode9.3
+      before_install:
+        - brew upgrade cmake
+        - brew install sdl2{,_mixer,_ttf} check
+
+script:
+  - mkdir build
+  - cd build
+  - if [ ! -z "$TRAVIS_TAG" ] ; then export CMAKE_BUILD_TYPE=Release ; else export CMAKE_BUILD_TYPE=Debug ; fi
+  - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE ..
+  - make
+  - make package
+  - cd $TRAVIS_BUILD_DIR
+
+deploy:
+  provider: releases
+  file_glob: true
+  file:
+    - build/*.dmg
+    - build/*.tar.gz
+  name: $TRAVIS_TAG
+  skip_cleanup: true
+  on:
+    branch: master
+    tags: true
+  api_key:
+    secure: hevb9hoiAJ5vRJ6BI0py4IJs1flGCVBbHdlmP7gXWzrob8jRUoiYJcV6cKNsZkvh5+BPZoXnm3uqOLWe5O1tbkdjCSMNoplphpQF5PiG6AwatAKDz8DYPLgwjvrni8hNCyeYQxgaS8vsBlpxvllILDbiiFg84Q4CfOiVzP2jwGNDQDWGSkYmbQ42pp9oFwhzntE8ZImeGwUZgXxcabULerKvx2Nen9J872rZS4U15Fh59HQ1ntnQh17vf/yU9AVmCBu8cF+JzXA4gHZWnzaH2o8N3ldZ8SI+CFKQOHWuqv1UPDvf1cTz575T7Zq+sAuRugmZdkvV4Q2F3RUEDPODJhERYSH8I/9eIh3akNPJ3MQYHRGdhEP4jh6b7uyYplM+BWTOA3jbDo7f2exqOXbU5it/9eqUvmn03avRxNVDW3XVPh6QNpWPdcqmbc4+6wWp8272zrGgMhp4bREEpDRSZ/zDALSG9E1KcuiC6cPKmFz1CwwO8KmiL9kaUfd9vFSPiZ79LaoDrSPElQQ0iKSxEAVAG4mn7lHbmm1NiPbXNW7nhogcgkpru3vG0zSMzYZxmaBinykAT4ccjRT+7oyyUsXr0g4kmiB+69wks//1asHLcSfEBkOG9Znk7nskO/hyJhO2kFbdcnBEyxf0MXs0mB+h1m33Dja5LYzFTlJC7Sw=

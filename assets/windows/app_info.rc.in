@@ -1,0 +1,31 @@
+#include <windows.h>
+
+1 ICON DISCARDABLE "app_icon.ico"
+
+1 VERSIONINFO
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILEVERSION	@Pong_VERSION_MAJOR@,@Pong_VERSION_MINOR@,@Pong_VERSION_PATCH@,0
+PRODUCTVERSION @Pong_VERSION_MAJOR@,@Pong_VERSION_MINOR@,@Pong_VERSION_PATCH@,0
+
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904E4"
+		BEGIN
+			VALUE "Comments", "@Pong_HOMEPAGE_URL@\0"
+			VALUE "CompanyName", "@Pong_AUTHOR_NAME@\0"
+			VALUE "FileDescription", "@Pong_DESCRIPTION@\0"
+			VALUE "FileVersion", "@Pong_VERSION@\0"
+			VALUE "InternalName", "@Pong_NAME@.exe\0"
+			VALUE "LegalCopyright", "@Pong_COPYRIGHT@\0"
+			VALUE "ProductName", "@Pong_READABLE_NAME@\0"
+			VALUE "ProductVersion", "@Pong_VERSION@\0"
+		END
+	END
+
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x409, 0
+	END
+END

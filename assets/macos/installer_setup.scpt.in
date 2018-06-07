@@ -1,0 +1,50 @@
+on run argv
+  set imageName to item 1 of argv
+
+  tell application "Finder"
+    tell disk imageName
+
+      set openAttempts to 0
+      repeat while openAttempts < 4
+        try
+          open
+            delay 1
+            set openAttempts to 5
+          close
+        on error errStr number errorNumber
+          set openAttempts to openAttempts + 1
+          delay 5
+        end try
+      end repeat
+      delay 2
+
+      open
+        set current view of container window to icon view
+        set viewOptions to the icon view options of container window
+        set background picture of viewOptions to file ".background:background.tiff"
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 128
+        delay 2
+      close
+
+      open
+        tell container window
+          set sidebar width to 0
+          set statusbar visible to false
+          set toolbar visible to false
+          set the bounds to { 100, 100, 640, 442 }
+          set position of item "@Pong_NAME@.app" to { 120, 160 }
+          set position of item "Applications" to { 419, 160 }
+        end tell
+        delay 2
+      close
+
+      open
+        delay 1
+      close
+
+    end tell
+    delay 1
+  end tell
+
+end run

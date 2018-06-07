@@ -1,0 +1,97 @@
+version: '{build}'
+
+image: Visual Studio 2015
+
+environment:
+  CHECK_VERSION: 0.12.0
+  CHECK_FILE: check-%CHECK_VERSION%.tar.gz
+  CHECK_URL: https://github.com/libcheck/check/releases/download/%CHECK_VERSION%/%CHECK_FILE%
+  SDL2_VERSION: 2.0.8
+  SDL2_FILE: SDL2-devel-%SDL2_VERSION%-mingw.tar.gz
+  SDL2_URL: https://www.libsdl.org/release/%SDL2_FILE%
+  SDL2_MIXER_VERSION: 2.0.2
+  SDL2_MIXER_FILE: SDL2_mixer-devel-%SDL2_MIXER_VERSION%-mingw.tar.gz
+  SDL2_MIXER_URL: https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-%SDL2_MIXER_VERSION%-mingw.tar.gz
+  SDL2_TTF_VERSION: 2.0.14
+  SDL2_TTF_FILE: SDL2_ttf-devel-%SDL2_TTF_VERSION%-mingw.tar.gz
+  SDL2_TTF_URL: https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-%SDL2_TTF_VERSION%-mingw.tar.gz
+
+  matrix:
+    - platform: x86
+      configuration: Release
+      BUILD_ARCH: 32
+      MINGW_DIR: C:\mingw-w64\i686-6.3.0-posix-dwarf-rt_v5-rev1\mingw32
+      CHECK_DIR: C:\check-%CHECK_VERSION%
+      SDL2_DIR: C:\SDL2-%SDL2_VERSION%\i686-w64-mingw32
+      SDL2_MIXER_DIR: C:\SDL2_mixer-%SDL2_MIXER_VERSION%\i686-w64-mingw32
+      SDL2_TTF_DIR: C:\SDL2_ttf-%SDL2_TTF_VERSION%\i686-w64-mingw32
+    - platform: x64
+      configuration: Release
+      BUILD_ARCH: 64
+      MINGW_DIR: C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64
+      CHECK_DIR: C:\check-%CHECK_VERSION%
+      SDL2_DIR: C:\SDL2-%SDL2_VERSION%\x86_64-w64-mingw32
+      SDL2_MIXER_DIR: C:\SDL2_mixer-%SDL2_MIXER_VERSION%\x86_64-w64-mingw32
+      SDL2_TTF_DIR: C:\SDL2_ttf-%SDL2_TTF_VERSION%\x86_64-w64-mingw32
+
+cache:
+  - "%CHECK_FILE%"
+  - "%SDL2_FILE%"
+  - "%SDL2_MIXER_FILE%"
+  - "%SDL2_TTF_FILE%"
+
+init:
+  - ps: Update-AppveyorBuild -Version "$(Get-Date -format yyyyMMdd).$env:APPVEYOR_BUILD_NUMBER"
+
+install:
+  # CMake/MinGW don't want sh.exe on path.
+  - set PATH=%MINGW_DIR%\bin;%PATH:C:\Program Files\Git\usr\bin;=%
+  - path
+
+  # Download, build and install Check
+  - if not exist "%CHECK_FILE%" appveyor DownloadFile %CHECK_URL%
+  - 7z x "%CHECK_FILE%" -so | 7z x -si -ttar -oC:\
+  - cd "%CHECK_DIR%"
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_INSTALL_PREFIX="%MINGW_DIR%" -G "MinGW Makefiles" ..
+  - mingw32-make
+  - mingw32-make install
+  - cd "%APPVEYOR_BUILD_FOLDER%"
+
+  # Download and install SDL2
+  - if not exist "%SDL2_FILE%" appveyor DownloadFile %SDL2_URL%
+  - 7z x "%SDL2_FILE%" -so | 7z x -si -ttar -oC:\
+  - xcopy "%SDL2_DIR%\*" "%MINGW_DIR%\" /s /y
+
+  # Download and install SDL2_mixer
+  - if not exist "%SDL2_MIXER_FILE%" appveyor DownloadFile %SDL2_MIXER_URL%
+  - 7z x "%SDL2_MIXER_FILE%" -so | 7z x -si -ttar -oC:\
+  - xcopy "%SDL2_MIXER_DIR%\*" "%MINGW_DIR%\" /s /y
+
+  # Download and install SDL2_ttf
+  - if not exist "%SDL2_TTF_FILE%" appveyor DownloadFile %SDL2_TTF_URL%
+  - 7z x "%SDL2_TTF_FILE%" -so | 7z x -si -ttar -oC:\
+  - xcopy "%SDL2_TTF_DIR%\*" "%MINGW_DIR%\" /s /y
+
+build_script:
+  - mkdir build
+  - cd build
+  - cmake -DENABLE_TESTING=FALSE -DBUILD_ARCH=%BUILD_ARCH% -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "MinGW Makefiles" ..
+  - mingw32-make
+  - mingw32-make package
+
+artifacts:
+  - path: build\*.exe
+  - path: build\*.zip
+
+deploy:
+  release: "%APPVEYOR_REPO_TAG_NAME%"
+  description: "Release %APPVEYOR_REPO_TAG_NAME%"
+  artifact: /.*/
+  provider: GitHub
+  auth_token:
+    secure: +M7evHg6C1QZandmM3tNOoKpfsh8XY+S1O3Na3kxDDxgpRbdjuQlpjJjyqoGyQsX
+  on:
+    branch: master
+    appveyor_repo_tag: true
